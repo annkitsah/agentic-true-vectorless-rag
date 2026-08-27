@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
 
+    mistral_api_key: str | None = None
+    mistral_ocr_model: str = "mistral-ocr-latest"
+    mistral_ocr_timeout_ms: int = Field(
+        default=120_000,
+        gt=0,
+    )
+
     data_dir: str = "./data"
     raw_data_dir: str = "./data/raw"
     processed_data_dir: str = "./data/processed"
