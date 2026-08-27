@@ -3,11 +3,16 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
 
-from app.documents.models import DocumentRecord, DocumentStatus
+from app.documents.models import (
+    DocumentRecord,
+    DocumentStatus,
+    PageRecord,
+)
 from app.documents.page_store import PageStore
 from app.documents.repository import DocumentRepository
 from app.ingestion.hashing import calculate_file_sha256
 from app.ingestion.pdf_parser import extract_pages
+from app.ocr.pipeline import OCRPipeline
 
 
 class IngestionResult(BaseModel):
@@ -21,18 +26,24 @@ class IngestionResult(BaseModel):
 
 
 class IngestionService:
-    """Coordinates document registration and persistent page extraction."""
+    """Coordinates document registration, OCR, and page persistence."""
 
     def __init__(
         self,
         repository: DocumentRepository,
         page_store: PageStore,
+        ocr_pipeline: OCRPipeline | None = None,
+        processed_root: Path | None = None,
+        ocr_dpi: int | None = None,
     ) -> None:
         self.repository = repository
         self.page_store = page_store
+        self.ocr_pipeline = ocr_pipeline
+        self.processed_root = processed_root
+        self.ocr_dpi = ocr_dpi
 
     def ingest(self, file_path: Path) -> IngestionResult:
-        """Ingest a PDF into the document registry and page store."""
+        """Ingest a PDF and persist its canonical page records."""
 
         if not file_path.is_file():
             raise FileNotFoundError(
@@ -57,10 +68,34 @@ class IngestionService:
 
         document_id = f"doc_{uuid4().hex}"
 
-        pages = extract_pages(
-            file_path,
-            document_id,
-        )
+        if self.ocr_pipeline is not None:
+            if self.processed_root is None:
+                raise RuntimeError(
+                    "processed_root is required when OCR pipeline is enabled"
+                )
+
+            pipeline_result = self.ocr_pipeline.process_document(
+                pdf_path=file_path,
+                document_id=document_id,
+                output_root=self.processed_root,
+                dpi=self.ocr_dpi,
+            )
+
+            pages = [
+                PageRecord(
+                    document_id=document_id,
+                    page_number=page.page_number,
+                    text=page.text,
+                    width=page.classification.content.width,
+                    height=page.classification.content.height,
+                )
+                for page in pipeline_result.pages
+            ]
+        else:
+            pages = extract_pages(
+                file_path,
+                document_id,
+            )
 
         self.page_store.save_pages(pages)
 
