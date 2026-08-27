@@ -49,3 +49,4 @@ data/raw/*
 # Keep runtime directory structure
 !data/processed/.gitkeep
 !data/indexes/.gitkeep
+data/*.db
