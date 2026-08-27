@@ -220,3 +220,102 @@ def test_retriever_empty_document_store(
     )
 
     assert response.results == ()
+
+def test_bm25_penalizes_long_documents(
+    tmp_path: Path,
+) -> None:
+    store = PageStore(tmp_path)
+
+    store.save_pages(
+        [
+            create_page(
+                "doc-001",
+                1,
+                "retrieval " + " ".join(["common"] * 100),
+            ),
+            create_page(
+                "doc-001",
+                2,
+                "retrieval",
+            ),
+        ]
+    )
+
+    retriever = LexicalRetriever(store)
+
+    response = retriever.retrieve(
+        RetrievalQuery(
+            text="retrieval",
+            top_k=2,
+        )
+    )
+
+    assert response.result_count == 2
+    assert response.results[0].page_number == 2
+
+
+def test_bm25_uses_inverse_document_frequency(
+    tmp_path: Path,
+) -> None:
+    store = PageStore(tmp_path)
+
+    store.save_pages(
+        [
+            create_page(
+                "doc-001",
+                1,
+                "retrieval common",
+            ),
+            create_page(
+                "doc-001",
+                2,
+                "retrieval common",
+            ),
+            create_page(
+                "doc-001",
+                3,
+                "retrieval rare",
+            ),
+        ]
+    )
+
+    retriever = LexicalRetriever(store)
+
+    response = retriever.retrieve(
+        RetrievalQuery(
+            text="rare",
+            top_k=1,
+        )
+    )
+
+    assert response.result_count == 1
+    assert response.results[0].page_number == 3
+
+
+def test_bm25_parameters_are_configurable(
+    page_store: PageStore,
+) -> None:
+    retriever = LexicalRetriever(
+        page_store,
+        k1=2.0,
+        b=0.5,
+    )
+
+    assert retriever.k1 == 2.0
+    assert retriever.b == 0.5
+
+
+def test_bm25_rejects_non_finite_parameters(
+    page_store: PageStore,
+) -> None:
+    with pytest.raises(ValueError):
+        LexicalRetriever(
+            page_store,
+            k1=float("inf"),
+        )
+
+    with pytest.raises(ValueError):
+        LexicalRetriever(
+            page_store,
+            b=float("nan"),
+        )
