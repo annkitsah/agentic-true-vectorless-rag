@@ -188,3 +188,45 @@ def test_delete_document(tmp_path: Path) -> None:
             "doc-test-001",
             1,
         )
+def test_get_all_pages_returns_pages_across_documents(
+    tmp_path: Path,
+) -> None:
+    store = PageStore(tmp_path)
+
+    pages = [
+        PageRecord(
+            document_id="doc_b",
+            page_number=2,
+            text="Document B page two",
+            width=612.0,
+            height=792.0,
+        ),
+        PageRecord(
+            document_id="doc_a",
+            page_number=2,
+            text="Document A page two",
+            width=612.0,
+            height=792.0,
+        ),
+        PageRecord(
+            document_id="doc_a",
+            page_number=1,
+            text="Document A page one",
+            width=612.0,
+            height=792.0,
+        ),
+    ]
+
+    store.save_pages([pages[0]])
+    store.save_pages([pages[1], pages[2]])
+
+    result = store.get_all_pages()
+
+    assert [
+        (page.document_id, page.page_number)
+        for page in result
+    ] == [
+        ("doc_a", 1),
+        ("doc_a", 2),
+        ("doc_b", 2),
+    ]

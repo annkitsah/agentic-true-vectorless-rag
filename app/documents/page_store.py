@@ -222,3 +222,31 @@ class PageStore:
                 path.rmdir()
 
         document_dir.rmdir()
+
+    def get_document_ids(self) -> list[str]:
+        """Return persisted document IDs in deterministic order."""
+
+        documents_dir = self.root_dir / "documents"
+
+        if not documents_dir.is_dir():
+            return []
+
+        return sorted(
+            path.name
+            for path in documents_dir.iterdir()
+            if path.is_dir()
+        )
+
+    def get_all_pages(self) -> list[PageRecord]:
+        """Load all persisted pages across all documents.
+
+        Documents and pages are returned in deterministic order:
+        document ID ascending, then page number ascending.
+        """
+
+        pages: list[PageRecord] = []
+
+        for document_id in self.get_document_ids():
+            pages.extend(self.get_pages(document_id))
+
+        return pages
