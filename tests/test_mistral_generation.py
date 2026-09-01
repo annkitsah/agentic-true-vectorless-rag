@@ -2,7 +2,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.generation.providers.mistral import MistralGenerationProvider
 from app.generation.models import (
     GenerationMessage,
     GenerationRequest,
