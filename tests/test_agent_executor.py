@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pytest
 
+from app.agents.executor import AgentExecutor
 from app.agents.models import (
     AgentAction,
     AgentActionType,
     AgentPlan,
 )
 from app.agents.state import AgentState
-from app.agents.executor import AgentExecutor
 from app.documents.models import PageRecord
 from app.documents.page_store import PageStore
 from app.retrieval.models import RetrievalQuery
@@ -296,5 +296,8 @@ def test_executor_rejects_unsupported_action() -> None:
         )
     )
 
-    with pytest.raises(NotImplementedError, match="answer"):
+    with pytest.raises(
+        ValueError,
+        match="unsupported executor action",
+    ):
         executor.execute(state)

@@ -9,7 +9,7 @@ class AgentPlanner:
     """Create deterministic execution plans for agent queries."""
 
     def plan(self, query: str) -> AgentPlan:
-        """Build a retrieval-and-answer plan for a user query."""
+        """Build a retrieval plan for an agent query."""
 
         if not isinstance(query, str):
             raise TypeError("query must be a string")
@@ -24,10 +24,6 @@ class AgentPlanner:
             actions=(
                 AgentAction(
                     action_type=AgentActionType.RETRIEVE,
-                    query=normalized_query,
-                ),
-                AgentAction(
-                    action_type=AgentActionType.ANSWER,
                     query=normalized_query,
                 ),
             ),

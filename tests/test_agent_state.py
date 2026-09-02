@@ -1,8 +1,6 @@
 import pytest
 from pydantic import ValidationError
 
-
-
 from app.agents.models import (
     AgentAction,
     AgentActionType,
@@ -12,8 +10,8 @@ from app.agents.models import (
 )
 from app.agents.state import AgentState
 from app.retrieval.models import (
-    RetrievedContext,
     RetrievalResult,
+    RetrievedContext,
 )
 
 

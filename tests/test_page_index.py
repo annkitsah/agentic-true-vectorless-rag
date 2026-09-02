@@ -1,7 +1,7 @@
 import pytest
 
 from app.documents.models import PageRecord
-from app.documents.page_store import PageStore, PageNotFoundError
+from app.documents.page_store import PageNotFoundError, PageStore
 from app.retrieval.inverted_index import InvertedIndex
 from app.retrieval.page_index import PageIndex
 

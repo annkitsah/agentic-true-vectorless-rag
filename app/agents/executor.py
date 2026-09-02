@@ -5,7 +5,7 @@ from app.retrieval.service import RetrievalService
 
 
 class AgentExecutor:
-    """Execute an agent plan against application services."""
+    """Execute retrieval actions against application services."""
 
     def __init__(
         self,
@@ -17,7 +17,7 @@ class AgentExecutor:
         self,
         state: AgentState,
     ) -> AgentState:
-        """Execute the current plan and update the agent state."""
+        """Execute retrieval actions and update agent state."""
 
         if not isinstance(state, AgentState):
             raise TypeError("state must be an AgentState")
@@ -26,10 +26,16 @@ class AgentExecutor:
             raise ValueError("agent state must contain a plan")
 
         for action in state.plan.actions:
-            self._execute_action(
-                state,
-                action.action_type,
-                action.query,
+            if action.action_type is AgentActionType.RETRIEVE:
+                self._execute_action(
+                    state,
+                    action.action_type,
+                    action.query,
+                )
+                continue
+
+            raise ValueError(
+                f"unsupported executor action: {action.action_type}"
             )
 
         state.advance_iteration()
@@ -42,26 +48,13 @@ class AgentExecutor:
         action_type: AgentActionType,
         query: str,
     ) -> None:
-        if action_type is AgentActionType.RETRIEVE:
-            context = self.retrieval_service.retrieve(
-                RetrievalQuery(
-                    text=query,
-                )
+        if action_type is not AgentActionType.RETRIEVE:
+            raise ValueError(
+                f"unsupported executor action: {action_type}"
             )
 
-            state.add_context(context)
-            return
-
-        if action_type is AgentActionType.ANSWER:
-            raise NotImplementedError(
-                "answer action execution is not implemented yet"
-            )
-
-        if action_type is AgentActionType.REFINE:
-            raise NotImplementedError(
-                "refine action execution is not implemented yet"
-            )
-
-        raise ValueError(
-            f"unsupported agent action: {action_type}"
+        context = self.retrieval_service.retrieve(
+            RetrievalQuery(text=query)
         )
+
+        state.add_context(context)

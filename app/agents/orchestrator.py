@@ -3,8 +3,10 @@ from app.agents.decision import AgentDecisionEngine
 from app.agents.executor import AgentExecutor
 from app.agents.models import AgentDecisionType, AgentResponse
 from app.agents.planner import AgentPlanner
+from app.agents.refiner import AgentQueryRefiner
 from app.agents.state import AgentState
 from app.retrieval.models import RetrievedContext
+
 
 class AgentOrchestrator:
     """Coordinate planning, retrieval, decision-making, and refinement."""
@@ -16,6 +18,7 @@ class AgentOrchestrator:
         executor: AgentExecutor,
         decision_engine: AgentDecisionEngine | None = None,
         answerer: Answerer | None = None,
+        refiner: AgentQueryRefiner | None = None,
     ) -> None:
         self.planner = planner or AgentPlanner()
         self.executor = executor
@@ -23,6 +26,7 @@ class AgentOrchestrator:
             decision_engine or AgentDecisionEngine()
         )
         self.answerer = answerer or ContextAnswerer()
+        self.refiner = refiner or AgentQueryRefiner()
 
     def run(
         self,
@@ -74,12 +78,12 @@ class AgentOrchestrator:
                 )
 
             if decision.decision_type is AgentDecisionType.REFINE:
-                if decision.next_query is None:
-                    raise ValueError(
-                        "refinement decision must contain next_query"
-                    )
+                next_query = decision.next_query
 
-                state.set_query(decision.next_query)
+                if next_query is None:
+                    next_query = self.refiner.refine(state)
+
+                state.set_query(next_query)
                 self._plan_current_query(state)
                 continue
 

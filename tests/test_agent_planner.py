@@ -1,22 +1,21 @@
 import pytest
 
-from app.agents.models import AgentActionType
+from app.agents.models import (
+    AgentAction,
+    AgentActionType,
+)
 from app.agents.planner import AgentPlanner
 
 
-def test_planner_creates_retrieve_and_answer_plan() -> None:
+def test_planner_creates_retrieve_plan() -> None:
     planner = AgentPlanner()
 
     plan = planner.plan("What is vectorless RAG?")
 
     assert plan.query == "What is vectorless RAG?"
-    assert len(plan.actions) == 2
-
-    assert plan.actions[0].action_type == AgentActionType.RETRIEVE
+    assert len(plan.actions) == 1
+    assert plan.actions[0].action_type is AgentActionType.RETRIEVE
     assert plan.actions[0].query == "What is vectorless RAG?"
-
-    assert plan.actions[1].action_type == AgentActionType.ANSWER
-    assert plan.actions[1].query == "What is vectorless RAG?"
 
 
 def test_planner_strips_query_whitespace() -> None:
@@ -26,7 +25,6 @@ def test_planner_strips_query_whitespace() -> None:
 
     assert plan.query == "retrieval architecture"
     assert plan.actions[0].query == "retrieval architecture"
-    assert plan.actions[1].query == "retrieval architecture"
 
 
 def test_planner_rejects_empty_query() -> None:
@@ -57,3 +55,17 @@ def test_planner_is_deterministic() -> None:
     second = planner.plan("Explain lexical retrieval")
 
     assert first == second
+
+def test_planner_creates_retrieval_only_execution_plan() -> None:
+    planner = AgentPlanner()
+
+    plan = planner.plan(
+        "What does vectorless RAG use for retrieval?"
+    )
+
+    assert plan.actions == (
+        AgentAction(
+            action_type=AgentActionType.RETRIEVE,
+            query="What does vectorless RAG use for retrieval?",
+        ),
+    )

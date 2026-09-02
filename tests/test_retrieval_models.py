@@ -2,10 +2,10 @@ import pytest
 from pydantic import ValidationError
 
 from app.retrieval.models import (
-    RetrievedContext,
     RetrievalQuery,
     RetrievalResponse,
     RetrievalResult,
+    RetrievedContext,
 )
 
 

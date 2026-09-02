@@ -1,7 +1,7 @@
 from pathlib import Path
-import pytest
 
 import pymupdf
+import pytest
 
 from app.ocr.models import PageProcessingDecision
 from app.ocr.pipeline import OCRPipeline

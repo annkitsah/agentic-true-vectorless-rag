@@ -4,8 +4,8 @@ import pymupdf
 import pytest
 
 from app.ocr.renderer import (
-    PageRenderError,
     PageRenderer,
+    PageRenderError,
 )
 
 

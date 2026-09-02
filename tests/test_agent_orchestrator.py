@@ -2,15 +2,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.agents.answerer import ContextAnswerer
-
 from app.agents.decision import AgentDecisionEngine
-from app.agents.executor import AgentExecutor
 from app.agents.models import AgentDecision, AgentDecisionType
 from app.agents.orchestrator import AgentOrchestrator
 from app.agents.planner import AgentPlanner
 from app.agents.state import AgentState
-from app.retrieval.models import RetrievedContext, RetrievalResult
+from app.retrieval.models import RetrievalResult, RetrievedContext
 
 
 def _context(

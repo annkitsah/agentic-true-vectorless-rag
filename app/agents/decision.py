@@ -31,17 +31,13 @@ class AgentDecisionEngine:
         if state.iteration >= self.max_iterations:
             return AgentDecision(
                 decision_type=AgentDecisionType.STOP,
-                reason=(
-                    "Maximum agent iterations reached."
-                ),
+                reason="Maximum agent iterations reached.",
             )
 
         if not state.contexts:
             return AgentDecision(
                 decision_type=AgentDecisionType.REFINE,
-                reason=(
-                    "No retrieved context is available."
-                ),
+                reason="No retrieved context is available.",
                 next_query=state.current_query,
             )
 
@@ -58,7 +54,5 @@ class AgentDecisionEngine:
 
         return AgentDecision(
             decision_type=AgentDecisionType.ANSWER,
-            reason=(
-                "Relevant retrieved context is available."
-            ),
+            reason="Relevant retrieved context is available.",
         )

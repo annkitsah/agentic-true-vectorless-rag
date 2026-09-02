@@ -1,7 +1,7 @@
 import pytest
 
 from app.agents.answerer import Answerer, ContextAnswerer
-from app.retrieval.models import RetrievedContext, RetrievalResult
+from app.retrieval.models import RetrievalResult, RetrievedContext
 
 
 def make_context(
