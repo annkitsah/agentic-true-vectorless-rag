@@ -4,7 +4,7 @@ import base64
 import time
 from pathlib import Path
 
-from mistralai.client import Mistral
+from mistralai import Mistral
 
 from app.ocr.models import OCRProviderMetadata, OCRResult
 

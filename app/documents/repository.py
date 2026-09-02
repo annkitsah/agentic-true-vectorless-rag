@@ -1,6 +1,6 @@
-from pathlib import Path
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 from app.documents.models import DocumentRecord, DocumentStatus
 

@@ -10,7 +10,7 @@ from app.ocr.models import (
     PageProcessingDecision,
     PageProcessingDecisionResult,
 )
-from app.ocr.renderer import PageRenderResult, PageRenderer
+from app.ocr.renderer import PageRenderer, PageRenderResult
 
 
 class PagePipelineResult(BaseModel):

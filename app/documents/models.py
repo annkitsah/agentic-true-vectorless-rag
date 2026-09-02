@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -24,7 +24,7 @@ class DocumentRecord(BaseModel):
     page_count: int = Field(ge=0)
     status: DocumentStatus = DocumentStatus.REGISTERED
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 

@@ -1,10 +1,7 @@
 from enum import StrEnum
-
-from pydantic import BaseModel, ConfigDict, Field
-
 from pathlib import Path
 
-
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TextExtractionMode(StrEnum):

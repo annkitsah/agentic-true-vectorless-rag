@@ -1,5 +1,5 @@
 from app.documents.models import PageRecord
-from app.documents.page_store import PageNotFoundError, PageStore
+from app.documents.page_store import PageStore
 from app.retrieval.inverted_index import InvertedIndex
 
 

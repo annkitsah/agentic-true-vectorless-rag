@@ -1,7 +1,6 @@
 import re
 import unicodedata
 
-
 _TOKEN_PATTERN = re.compile(r"\b[\w]+\b", re.UNICODE)
 
 _DEFAULT_STOPWORDS = frozenset(
