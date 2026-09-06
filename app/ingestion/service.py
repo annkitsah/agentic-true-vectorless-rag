@@ -45,8 +45,20 @@ class IngestionService:
         self.ocr_dpi = ocr_dpi
         self.index_lifecycle = index_lifecycle
 
-    def ingest(self, file_path: Path) -> IngestionResult:
-        """Ingest a PDF and persist its canonical page records."""
+    def ingest(
+        self,
+        file_path: Path,
+        *,
+        original_filename: str | None = None,
+    ) -> IngestionResult:
+        """Ingest a PDF and persist its canonical page records.
+
+        `original_filename`, when given, is stored as the document's
+        display filename instead of `file_path.name` — useful when the
+        caller stores the file on disk under a generated/prefixed name
+        (e.g. to avoid collisions) but wants the user-facing filename
+        preserved.
+        """
 
         if not file_path.is_file():
             raise FileNotFoundError(
@@ -108,7 +120,7 @@ class IngestionService:
 
         document = DocumentRecord(
             document_id=document_id,
-            filename=file_path.name,
+            filename=original_filename or file_path.name,
             source_path=str(file_path.resolve()),
             file_hash=file_hash,
             file_size_bytes=file_path.stat().st_size,

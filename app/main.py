@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.routes.documents import router as documents_router
+from app.api.routes.query import router as query_router
 from app.config.settings import get_settings
 from app.container import ApplicationContainer, create_application_container
 
@@ -27,6 +29,9 @@ app = FastAPI(
 )
 
 app.state.container = container
+
+app.include_router(documents_router)
+app.include_router(query_router)
 
 
 @app.get("/health")

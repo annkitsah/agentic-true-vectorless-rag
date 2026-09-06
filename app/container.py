@@ -9,7 +9,7 @@ from app.agents.refiner import AgentQueryRefiner
 from app.config.settings import Settings, get_settings
 from app.documents.page_store import PageStore
 from app.documents.repository import DocumentRepository
-from app.generation.providers.mistral import MistralGenerationProvider
+from app.generation.providers.ollama import OllamaGenerationProvider
 from app.generation.service import GenerationService
 from app.ingestion.service import IngestionService
 from app.ocr.pipeline import OCRPipeline
@@ -80,7 +80,7 @@ class ApplicationContainer:
 
         self.answerer = GenerationAnswerer(
             generation_service=self.generation_service,
-            model=settings.mistral_generation_model,
+            model=settings.ollama_model,
             temperature=settings.generation_temperature,
             max_tokens=settings.generation_max_tokens,
         )
@@ -149,18 +149,18 @@ class ApplicationContainer:
 
     def _build_generation_provider(
         self,
-    ) -> MistralGenerationProvider:
-        """Build the configured text generation provider."""
+    ) -> OllamaGenerationProvider:
+        """Build the configured text generation provider.
 
-        if not self.settings.mistral_api_key:
-            raise RuntimeError(
-                "MISTRAL_API_KEY is required for generation."
-            )
+        Generation runs against a local Ollama server, kept independent
+        of Mistral (which is used only for OCR) so answer generation has
+        no external API cost or rate limit.
+        """
 
-        return MistralGenerationProvider(
-            api_key=self.settings.mistral_api_key,
-            default_model=self.settings.mistral_generation_model,
-            timeout_ms=self.settings.mistral_generation_timeout_ms,
+        return OllamaGenerationProvider(
+            base_url=self.settings.ollama_base_url,
+            default_model=self.settings.ollama_model,
+            timeout_ms=self.settings.ollama_generation_timeout_ms,
         )
 
 

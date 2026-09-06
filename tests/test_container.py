@@ -11,7 +11,7 @@ from app.container import (
     ApplicationContainer,
     create_application_container,
 )
-from app.generation.providers.mistral import MistralGenerationProvider
+from app.generation.providers.ollama import OllamaGenerationProvider
 from app.generation.service import GenerationService
 from app.ingestion.service import IngestionService
 from app.retrieval.candidates import CandidateRetriever
@@ -67,7 +67,7 @@ def test_create_application_container_builds_complete_graph(
 
     assert isinstance(
         container.generation_provider,
-        MistralGenerationProvider,
+        OllamaGenerationProvider,
     )
     assert isinstance(
         container.generation_service,
@@ -164,7 +164,7 @@ def test_generation_answerer_uses_container_generation_service(
 
     assert (
         container.answerer.model
-        == settings.mistral_generation_model
+        == settings.ollama_model
     )
 
     assert (
@@ -213,5 +213,5 @@ def test_generation_provider_uses_configured_model(
 
     assert (
         container.generation_provider.model_name
-        == settings.mistral_generation_model
+        == settings.ollama_model
     )

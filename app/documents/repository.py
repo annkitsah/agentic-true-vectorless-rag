@@ -109,6 +109,43 @@ class DocumentRepository:
             created_at=datetime.fromisoformat(row["created_at"]),
         )
 
+
+    def list_all(self) -> list[DocumentRecord]:
+        """Return every document, most recently created first."""
+
+        with sqlite3.connect(self.database_path) as connection:
+            connection.row_factory = sqlite3.Row
+
+            rows = connection.execute(
+                """
+                SELECT
+                    document_id,
+                    filename,
+                    source_path,
+                    file_hash,
+                    file_size_bytes,
+                    page_count,
+                    status,
+                    created_at
+                FROM documents
+                ORDER BY created_at DESC
+                """
+            ).fetchall()
+
+        return [
+            DocumentRecord(
+                document_id=row["document_id"],
+                filename=row["filename"],
+                source_path=row["source_path"],
+                file_hash=row["file_hash"],
+                file_size_bytes=row["file_size_bytes"],
+                page_count=row["page_count"],
+                status=DocumentStatus(row["status"]),
+                created_at=datetime.fromisoformat(row["created_at"]),
+            )
+            for row in rows
+        ]
+
     def get_by_id(
         self,
         document_id: str,

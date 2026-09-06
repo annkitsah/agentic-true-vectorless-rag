@@ -43,8 +43,8 @@ class MistralGenerationProvider(GenerationProvider):
 
     @property
     def model_name(self) -> str:
-        """Return the configured model identifier."""
-        return self._model
+        """Return the configured default model identifier."""
+        return self._default_model
 
     def generate(
         self,

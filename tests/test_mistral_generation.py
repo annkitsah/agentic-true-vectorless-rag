@@ -306,3 +306,11 @@ def test_mistral_generation_provider_uses_request_model(
 
     assert result.model == "mistral-large-latest"
     assert client.chat.calls[0]["model"] == "mistral-large-latest"
+
+def test_model_name_returns_configured_default_model() -> None:
+    provider = MistralGenerationProvider(
+        api_key="test-key",
+        default_model="mistral-small-latest",
+    )
+
+    assert provider.model_name == "mistral-small-latest"
