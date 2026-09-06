@@ -5,7 +5,6 @@ from app.generation.prompt import PromptBuilder
 from app.generation.service import GenerationService
 from app.retrieval.models import RetrievedContext
 
-
 class Answerer(ABC):
     """Abstraction for generating an answer from retrieved context."""
 

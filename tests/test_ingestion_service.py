@@ -6,6 +6,9 @@ from app.documents.models import DocumentStatus
 from app.documents.page_store import PageStore
 from app.documents.repository import DocumentRepository
 from app.ingestion.service import IngestionService
+from app.retrieval.index_lifecycle import IndexLifecycle
+from app.retrieval.page_index import PageIndex
+from app.retrieval.text import tokenize
 
 
 @pytest.fixture
@@ -157,3 +160,35 @@ def test_ingest_non_pdf(
 
     with pytest.raises(ValueError):
         service.ingest(text_file)
+
+def test_ingest_indexes_pages_when_index_lifecycle_is_configured(
+    repository: DocumentRepository,
+    page_store: PageStore,
+) -> None:
+    page_index = PageIndex(page_store=page_store)
+    index_lifecycle = IndexLifecycle(
+        page_store=page_store,
+        page_index=page_index,
+    )
+
+    service = IngestionService(
+        repository=repository,
+        page_store=page_store,
+        index_lifecycle=index_lifecycle,
+    )
+
+    pdf_path = Path(
+        "data/raw/Chapter 1 - The Overview of Map of GenAI.pdf"
+    )
+
+    result = service.ingest(pdf_path)
+
+    first_page = page_store.get_page(
+        result.document.document_id,
+        1,
+    )
+
+    indexed_terms = tokenize(first_page.text)
+
+    assert len(indexed_terms) > 0
+    assert page_index.contains(indexed_terms[0])

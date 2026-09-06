@@ -13,6 +13,7 @@ from app.documents.repository import DocumentRepository
 from app.ingestion.hashing import calculate_file_sha256
 from app.ingestion.pdf_parser import extract_pages
 from app.ocr.pipeline import OCRPipeline
+from app.retrieval.index_lifecycle import IndexLifecycle
 
 
 class IngestionResult(BaseModel):
@@ -35,12 +36,14 @@ class IngestionService:
         ocr_pipeline: OCRPipeline | None = None,
         processed_root: Path | None = None,
         ocr_dpi: int | None = None,
+        index_lifecycle: IndexLifecycle | None = None,
     ) -> None:
         self.repository = repository
         self.page_store = page_store
         self.ocr_pipeline = ocr_pipeline
         self.processed_root = processed_root
         self.ocr_dpi = ocr_dpi
+        self.index_lifecycle = index_lifecycle
 
     def ingest(self, file_path: Path) -> IngestionResult:
         """Ingest a PDF and persist its canonical page records."""
@@ -98,6 +101,10 @@ class IngestionService:
             )
 
         self.page_store.save_pages(pages)
+
+        if self.index_lifecycle is not None:
+            for page in pages:
+                self.index_lifecycle.index_page(page)
 
         document = DocumentRecord(
             document_id=document_id,
