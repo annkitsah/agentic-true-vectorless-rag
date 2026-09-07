@@ -15,6 +15,7 @@ from app.generation.providers.ollama import OllamaGenerationProvider
 from app.generation.service import GenerationService
 from app.ingestion.service import IngestionService
 from app.retrieval.candidates import CandidateRetriever
+from app.retrieval.context import RetrievalContextAssembler
 from app.retrieval.index_lifecycle import IndexLifecycle
 from app.retrieval.inverted_index import InvertedIndex
 from app.retrieval.lexical import LexicalRetriever
@@ -135,6 +136,32 @@ def test_container_initialize_creates_schema_and_loads_index(
 
     assert indexed_page_count == 0
     assert container.repository.get_by_id("doc_missing") is None
+
+
+def test_container_wires_retrieval_top_k_and_max_pages_from_settings(
+    tmp_path: Path,
+) -> None:
+    # Deliberately non-default values, to prove real wiring rather than
+    # an accidental match against Settings' own defaults.
+    settings = Settings(
+        mistral_api_key="test-api-key",
+        data_dir=str(tmp_path / "data"),
+        raw_data_dir=str(tmp_path / "data" / "raw"),
+        processed_data_dir=str(tmp_path / "data" / "processed"),
+        index_dir=str(tmp_path / "data" / "indexes"),
+        metadata_dir=str(tmp_path / "data" / "metadata"),
+        retrieval_top_k=3,
+        retrieval_max_pages=7,
+    )
+
+    container = create_application_container(settings)
+
+    assert container.executor.top_k == 3
+    assert container.retrieval_context_assembler.max_pages == 7
+    assert (
+        container.retrieval_service.context_assembler
+        is container.retrieval_context_assembler
+    )
 
 
 def test_executor_uses_container_retrieval_service(

@@ -15,6 +15,7 @@ from app.ingestion.service import IngestionService
 from app.ocr.pipeline import OCRPipeline
 from app.ocr.providers.mistral import MistralOCRProvider
 from app.retrieval.candidates import CandidateRetriever
+from app.retrieval.context import RetrievalContextAssembler
 from app.retrieval.index_lifecycle import IndexLifecycle
 from app.retrieval.inverted_index import InvertedIndex
 from app.retrieval.lexical import LexicalRetriever
@@ -67,9 +68,14 @@ class ApplicationContainer:
             candidate_retriever=self.candidate_retriever,
         )
 
+        self.retrieval_context_assembler = RetrievalContextAssembler(
+            max_pages=settings.retrieval_max_pages,
+        )
+
         self.retrieval_service = RetrievalService(
             page_store=self.page_store,
             retriever=self.lexical_retriever,
+            context_assembler=self.retrieval_context_assembler,
         )
 
         self.generation_provider = self._build_generation_provider()
@@ -88,7 +94,9 @@ class ApplicationContainer:
         self.planner = AgentPlanner()
         self.executor = AgentExecutor(
             retrieval_service=self.retrieval_service,
+            top_k=settings.retrieval_top_k,
         )
+
         self.decision_engine = AgentDecisionEngine()
         self.refiner = AgentQueryRefiner()
 

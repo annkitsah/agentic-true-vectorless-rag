@@ -207,3 +207,71 @@ def test_custom_separator_is_used() -> None:
     ).assemble(response)
 
     assert "\n---\n" in context.text
+
+
+def test_max_pages_caps_the_number_of_included_results() -> None:
+    response = create_response(
+        (
+            create_result("doc-001", 1, "First page.", 3.0),
+            create_result("doc-001", 2, "Second page.", 2.0),
+            create_result("doc-001", 3, "Third page.", 1.0),
+        )
+    )
+
+    context = RetrievalContextAssembler(
+        max_pages=2,
+    ).assemble(response)
+
+    assert context.page_count == 2
+    assert context.results[0].page_number == 1
+    assert context.results[1].page_number == 2
+    assert "Third page." not in context.text
+
+
+def test_max_pages_none_means_unbounded_by_count() -> None:
+    response = create_response(
+        tuple(
+            create_result(
+                "doc-001",
+                page_number,
+                f"Page {page_number} content.",
+                float(10 - page_number),
+            )
+            for page_number in range(1, 11)
+        )
+    )
+
+    context = RetrievalContextAssembler(
+        max_pages=None,
+    ).assemble(response)
+
+    assert context.page_count == 10
+
+
+def test_assembler_rejects_invalid_max_pages() -> None:
+    with pytest.raises(ValueError):
+        RetrievalContextAssembler(max_pages=0)
+
+    with pytest.raises(ValueError):
+        RetrievalContextAssembler(max_pages=-1)
+
+
+def test_max_pages_and_max_chars_both_apply() -> None:
+    response = create_response(
+        (
+            create_result("doc-001", 1, "First page.", 2.0),
+            create_result("doc-001", 2, "Second page.", 1.0),
+        )
+    )
+
+    # max_chars alone would allow only the first result through.
+    formatted_first = RetrievalContextAssembler._format_result(
+        response.results[0]
+    )
+
+    context = RetrievalContextAssembler(
+        max_pages=2,
+        max_chars=len(formatted_first),
+    ).assemble(response)
+
+    assert context.page_count == 1

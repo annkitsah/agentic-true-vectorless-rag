@@ -301,3 +301,57 @@ def test_executor_rejects_unsupported_action() -> None:
         match="unsupported executor action",
     ):
         executor.execute(state)
+
+
+def test_executor_passes_configured_top_k_to_retrieval(
+    page_store: PageStore,
+) -> None:
+    executor = AgentExecutor(
+        retrieval_service=RetrievalService(page_store),
+        top_k=1,
+    )
+
+    state = AgentState(
+        original_query="lexical retrieval",
+        current_query="lexical retrieval",
+    )
+
+    state.set_plan(
+        AgentPlan(
+            query="lexical retrieval",
+            actions=(
+                AgentAction(
+                    action_type=AgentActionType.RETRIEVE,
+                    query="lexical retrieval",
+                ),
+            ),
+        )
+    )
+
+    result_state = executor.execute(state)
+
+    # Both pages match "retrieval"; top_k=1 must cap the result count.
+    assert result_state.contexts[-1].page_count == 1
+
+
+def test_executor_defaults_top_k_to_ten(
+    page_store: PageStore,
+) -> None:
+    executor = AgentExecutor(
+        retrieval_service=RetrievalService(page_store),
+    )
+
+    assert executor.top_k == 10
+
+
+def test_executor_rejects_invalid_top_k(
+    page_store: PageStore,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="top_k must be greater than zero",
+    ):
+        AgentExecutor(
+            retrieval_service=RetrievalService(page_store),
+            top_k=0,
+        )

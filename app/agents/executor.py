@@ -10,8 +10,14 @@ class AgentExecutor:
     def __init__(
         self,
         retrieval_service: RetrievalService,
+        *,
+        top_k: int = 10,
     ) -> None:
+        if top_k < 1:
+            raise ValueError("top_k must be greater than zero")
+
         self.retrieval_service = retrieval_service
+        self.top_k = top_k
 
     def execute(
         self,
@@ -54,7 +60,10 @@ class AgentExecutor:
             )
 
         context = self.retrieval_service.retrieve(
-            RetrievalQuery(text=query)
+            RetrievalQuery(
+                text=query,
+                top_k=self.top_k,
+            )
         )
 
         state.add_context(context)
