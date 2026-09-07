@@ -33,6 +33,13 @@ class QueryRequest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     question: str = Field(min_length=1, max_length=10_000)
+    document_id: str | None = Field(
+        default=None,
+        description=(
+            "When set, scopes retrieval to this document only, "
+            "for every retrieval attempt including refine iterations."
+        ),
+    )
 
 
 class QueryResponse(BaseModel):

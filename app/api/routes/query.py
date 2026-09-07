@@ -18,8 +18,20 @@ async def run_query(
 ) -> QueryResponse:
     """Run the agentic retrieval-and-answer loop for a question."""
 
+    if payload.document_id is not None:
+        document = container.repository.get_by_id(payload.document_id)
+
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document not found: {payload.document_id}",
+            )
+
     try:
-        response = container.agent_orchestrator.run(payload.question)
+        response = container.agent_orchestrator.run(
+            payload.question,
+            document_id=payload.document_id,
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

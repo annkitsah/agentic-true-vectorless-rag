@@ -355,3 +355,57 @@ def test_executor_rejects_invalid_top_k(
             retrieval_service=RetrievalService(page_store),
             top_k=0,
         )
+
+
+def test_executor_scopes_retrieval_to_state_document_id(
+    tmp_path: Path,
+) -> None:
+    scoped_store = PageStore(tmp_path)
+
+    scoped_store.save_pages(
+        [
+            create_page(
+                "doc-a",
+                1,
+                "Retrieval scoped to document A.",
+            ),
+        ]
+    )
+    scoped_store.save_pages(
+        [
+            create_page(
+                "doc-b",
+                1,
+                "Retrieval scoped to document B.",
+            ),
+        ]
+    )
+
+    executor = AgentExecutor(
+        retrieval_service=RetrievalService(scoped_store),
+    )
+
+    state = AgentState(
+        original_query="retrieval",
+        current_query="retrieval",
+        document_id="doc-a",
+    )
+
+    state.set_plan(
+        AgentPlan(
+            query="retrieval",
+            actions=(
+                AgentAction(
+                    action_type=AgentActionType.RETRIEVE,
+                    query="retrieval",
+                ),
+            ),
+        )
+    )
+
+    result_state = executor.execute(state)
+
+    context = result_state.contexts[-1]
+
+    assert context.page_count == 1
+    assert context.results[0].document_id == "doc-a"

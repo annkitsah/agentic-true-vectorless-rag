@@ -21,6 +21,7 @@ class AgentState(BaseModel):
     contexts: list[RetrievedContext] = Field(default_factory=list)
     decision: AgentDecision | None = None
     iteration: int = Field(default=0, ge=0)
+    document_id: str | None = None
 
     def add_context(
         self,

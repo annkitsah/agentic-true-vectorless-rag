@@ -179,3 +179,22 @@ def test_agent_state_rejects_empty_current_query() -> None:
             original_query="retrieval",
             current_query="",
         )
+
+
+def test_agent_state_document_id_defaults_to_none() -> None:
+    state = AgentState(
+        original_query="retrieval",
+        current_query="retrieval",
+    )
+
+    assert state.document_id is None
+
+
+def test_agent_state_accepts_explicit_document_id() -> None:
+    state = AgentState(
+        original_query="retrieval",
+        current_query="retrieval",
+        document_id="doc-123",
+    )
+
+    assert state.document_id == "doc-123"

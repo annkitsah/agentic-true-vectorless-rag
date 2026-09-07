@@ -22,6 +22,8 @@ from app.retrieval.index_lifecycle import IndexLifecycle
 from app.retrieval.lexical import LexicalRetriever
 from app.retrieval.page_index import PageIndex
 from app.retrieval.service import RetrievalService
+from app.retrieval.text import tokenize
+
 
 PDF_PATH = Path("data/raw/Chapter 1 - The Overview of Map of GenAI.pdf")
 
@@ -159,3 +161,51 @@ def test_query_missing_question_field_returns_422(
     response = client.post("/query", json={})
 
     assert response.status_code == 422
+
+
+def test_query_scoped_to_document_id_only_uses_that_document(
+    client: TestClient,
+    container: SimpleNamespace,
+) -> None:
+    first_result = container.ingestion_service.ingest(PDF_PATH)
+
+    other_pdf_path = Path(
+        "data/raw/Chapter 3 – The Foundation Layer.pdf"
+    )
+    container.ingestion_service.ingest(other_pdf_path)
+
+    first_page_text = container.page_store.get_page(
+        first_result.document.document_id,
+        1,
+    ).text
+
+    query_term = tokenize(first_page_text)[0]
+
+    response = client.post(
+        "/query",
+        json={
+            "question": query_term,
+            "document_id": first_result.document.document_id,
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert len(body["answer"]) > 0
+    assert first_result.document.document_id in body["answer"]
+
+
+def test_query_with_unknown_document_id_returns_404(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/query",
+        json={
+            "question": "what is this about",
+            "document_id": "doc_does_not_exist",
+        },
+    )
+
+    assert response.status_code == 404

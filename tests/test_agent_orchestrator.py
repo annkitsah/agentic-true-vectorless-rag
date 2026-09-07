@@ -376,3 +376,83 @@ def test_orchestrator_uses_custom_answerer() -> None:
     assert response.answer == "Generated answer."
     assert len(answerer.calls) == 1
     assert answerer.calls[0][0] == "What is vectorless RAG?"
+
+
+class RecordingExecutor:
+    def __init__(self) -> None:
+        self.seen_document_ids: list[str | None] = []
+
+    def execute(
+        self,
+        state: AgentState,
+    ) -> AgentState:
+        self.seen_document_ids.append(state.document_id)
+
+        state.add_context(
+            _context(query=state.current_query)
+        )
+
+        state.advance_iteration()
+
+        return state
+
+
+def test_orchestrator_passes_document_id_to_state() -> None:
+    executor = RecordingExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+    )
+
+    orchestrator.run(
+        "What is vectorless RAG?",
+        document_id="doc-123",
+    )
+
+    assert executor.seen_document_ids == ["doc-123"]
+
+
+def test_orchestrator_defaults_document_id_to_none() -> None:
+    executor = RecordingExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+    )
+
+    orchestrator.run("What is vectorless RAG?")
+
+    assert executor.seen_document_ids == [None]
+
+
+def test_orchestrator_keeps_document_id_across_refine_iterations() -> None:
+    class RefineOnceThenAnswerDecisionEngine:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def decide(self, state: AgentState) -> AgentDecision:
+            self.calls += 1
+
+            if self.calls == 1:
+                return AgentDecision(
+                    decision_type=AgentDecisionType.REFINE,
+                    reason="try again",
+                )
+
+            return AgentDecision(
+                decision_type=AgentDecisionType.ANSWER,
+                reason="found it",
+            )
+
+    executor = RecordingExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+        decision_engine=RefineOnceThenAnswerDecisionEngine(),
+    )
+
+    orchestrator.run(
+        "What is vectorless RAG?",
+        document_id="doc-123",
+    )
+
+    assert executor.seen_document_ids == ["doc-123", "doc-123"]

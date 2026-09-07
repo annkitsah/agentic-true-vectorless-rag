@@ -31,8 +31,15 @@ class AgentOrchestrator:
     def run(
         self,
         query: str,
+        *,
+        document_id: str | None = None,
     ) -> AgentResponse:
-        """Run the agent lifecycle for a user query."""
+        """Run the agent lifecycle for a user query.
+
+        `document_id`, when given, scopes retrieval to that single
+        document for every retrieval attempt across the run, including
+        any refine-and-retry iterations.
+        """
 
         if not isinstance(query, str):
             raise TypeError("query must be a string")
@@ -45,6 +52,7 @@ class AgentOrchestrator:
         state = AgentState(
             original_query=normalized_query,
             current_query=normalized_query,
+            document_id=document_id,
         )
 
         self._plan_current_query(state)

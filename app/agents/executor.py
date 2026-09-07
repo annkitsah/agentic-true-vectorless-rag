@@ -63,6 +63,7 @@ class AgentExecutor:
             RetrievalQuery(
                 text=query,
                 top_k=self.top_k,
+                document_id=state.document_id,
             )
         )
 
