@@ -110,16 +110,25 @@ class AgentOrchestrator:
     def _build_stop_response(
         state: AgentState,
     ) -> str:
-        """Build a deterministic response when execution must stop."""
+        """Build a deterministic response when execution must stop.
+
+        Prefers the triggering decision's reason (a clear, human-facing
+        explanation of why the agent gave up -- e.g. "off-topic
+        excerpts" or "iteration cap reached") over dumping the latest
+        raw retrieved page text, which previously surfaced verbatim,
+        `[Source: ...]` markup and all, whenever *any* context existed
+        at stop time -- even context an LLM judge had just determined
+        didn't actually answer the question.
+        """
+
+        if state.decision is not None and state.decision.reason:
+            return state.decision.reason
 
         if state.contexts:
             latest_context = state.contexts[-1]
 
             if latest_context.text.strip():
                 return latest_context.text
-
-        if state.decision is not None:
-            return state.decision.reason
 
         return "The agent could not retrieve sufficient context."
 

@@ -302,6 +302,24 @@ def test_orchestrator_stops_at_iteration_limit() -> None:
     assert executor.calls == 1
 
 
+def test_stop_response_prefers_decision_reason_over_raw_context() -> None:
+    # StubExecutor always adds non-empty context, unlike
+    # EmptyContextExecutor above -- this proves the stop response now
+    # explains *why* the agent stopped instead of silently dumping the
+    # last retrieved page text (with its "[Source: ...]" markup) as if
+    # it were an answer.
+    executor = StubExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+        decision_engine=AgentDecisionEngine(max_iterations=1),
+    )
+
+    response = orchestrator.run("test query")
+
+    assert response.answer == "Maximum agent iterations reached."
+    assert executor.calls == 1
+
 def test_orchestrator_stores_decision_in_state() -> None:
     captured_states: list[AgentState] = []
 
