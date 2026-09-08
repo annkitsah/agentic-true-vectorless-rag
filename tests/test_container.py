@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from app.agents.answerer import GenerationAnswerer
-from app.agents.decision import AgentDecisionEngine
+from app.agents.decision import AgentDecisionEngine, LLMDecisionEngine
 from app.agents.executor import AgentExecutor
 from app.agents.orchestrator import AgentOrchestrator
 from app.agents.planner import AgentPlanner
-from app.agents.refiner import AgentQueryRefiner
+from app.agents.refiner import AgentQueryRefiner, LLMQueryRefiner
 from app.config.settings import Settings
 from app.container import (
     ApplicationContainer,
@@ -83,9 +83,17 @@ def test_create_application_container_builds_complete_graph(
     assert isinstance(container.executor, AgentExecutor)
     assert isinstance(
         container.decision_engine,
+        LLMDecisionEngine,
+    )
+    assert isinstance(
+        container.decision_engine.fallback,
         AgentDecisionEngine,
     )
-    assert isinstance(container.refiner, AgentQueryRefiner)
+    assert isinstance(container.refiner, LLMQueryRefiner)
+    assert isinstance(
+        container.refiner.fallback,
+        AgentQueryRefiner,
+    )
     assert isinstance(
         container.agent_orchestrator,
         AgentOrchestrator,

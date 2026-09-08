@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from app.agents.answerer import GenerationAnswerer
-from app.agents.decision import AgentDecisionEngine
+from app.agents.decision import LLMDecisionEngine
 from app.agents.executor import AgentExecutor
 from app.agents.orchestrator import AgentOrchestrator
 from app.agents.planner import AgentPlanner
-from app.agents.refiner import AgentQueryRefiner
+from app.agents.refiner import LLMQueryRefiner
 from app.config.settings import Settings, get_settings
 from app.documents.page_store import PageStore
 from app.documents.repository import DocumentRepository
@@ -97,8 +97,14 @@ class ApplicationContainer:
             top_k=settings.retrieval_top_k,
         )
 
-        self.decision_engine = AgentDecisionEngine()
-        self.refiner = AgentQueryRefiner()
+        self.decision_engine = LLMDecisionEngine(
+            generation_service=self.generation_service,
+            model=settings.ollama_model,
+        )
+        self.refiner = LLMQueryRefiner(
+            generation_service=self.generation_service,
+            model=settings.ollama_model,
+        )
 
         self.agent_orchestrator = AgentOrchestrator(
             planner=self.planner,

@@ -1,9 +1,9 @@
 from app.agents.answerer import Answerer, ContextAnswerer
-from app.agents.decision import AgentDecisionEngine
+from app.agents.decision import AgentDecisionEngine, DecisionEngine
 from app.agents.executor import AgentExecutor
 from app.agents.models import AgentDecisionType, AgentResponse
 from app.agents.planner import AgentPlanner
-from app.agents.refiner import AgentQueryRefiner
+from app.agents.refiner import AgentQueryRefiner, QueryRefiner
 from app.agents.state import AgentState
 from app.retrieval.models import RetrievedContext
 
@@ -16,9 +16,9 @@ class AgentOrchestrator:
         *,
         planner: AgentPlanner | None = None,
         executor: AgentExecutor,
-        decision_engine: AgentDecisionEngine | None = None,
+        decision_engine: DecisionEngine | None = None,
         answerer: Answerer | None = None,
-        refiner: AgentQueryRefiner | None = None,
+        refiner: QueryRefiner | None = None,
     ) -> None:
         self.planner = planner or AgentPlanner()
         self.executor = executor
