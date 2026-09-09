@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.citations.models import Citation
+
 
 class AgentActionType(StrEnum):
     """Supported actions that the agent can request."""
@@ -58,3 +60,4 @@ class AgentResponse(BaseModel):
     query: str = Field(min_length=1, max_length=10_000)
     answer: str = Field(min_length=1, max_length=100_000)
     iterations: int = Field(ge=0)
+    citations: tuple[Citation, ...] = ()

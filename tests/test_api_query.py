@@ -24,7 +24,6 @@ from app.retrieval.page_index import PageIndex
 from app.retrieval.service import RetrievalService
 from app.retrieval.text import tokenize
 
-
 PDF_PATH = Path("data/raw/Chapter 1 - The Overview of Map of GenAI.pdf")
 
 
@@ -194,6 +193,8 @@ def test_query_scoped_to_document_id_only_uses_that_document(
     body = response.json()
 
     assert len(body["answer"]) > 0
+    # ContextAnswerer returns retrieved page text directly, tagged with
+    # its source document, so scoping is verifiable from the answer text.
     assert first_result.document.document_id in body["answer"]
 
 
@@ -209,3 +210,47 @@ def test_query_with_unknown_document_id_returns_404(
     )
 
     assert response.status_code == 404
+
+
+def test_query_response_includes_citations_with_resolved_filename(
+    client: TestClient,
+    container: SimpleNamespace,
+) -> None:
+    result = container.ingestion_service.ingest(PDF_PATH)
+
+    first_page_text = container.page_store.get_page(
+        result.document.document_id,
+        1,
+    ).text
+
+    query_term = tokenize(first_page_text)[0]
+
+    response = client.post(
+        "/query",
+        json={"question": query_term},
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert len(body["citations"]) > 0
+
+    citation = body["citations"][0]
+
+    assert citation["document_id"] == result.document.document_id
+    assert citation["filename"] == PDF_PATH.name
+    assert citation["page_number"] >= 1
+    assert citation["score"] >= 0
+
+
+def test_query_without_any_ingested_documents_has_no_citations(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/query",
+        json={"question": "anything"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["citations"] == []

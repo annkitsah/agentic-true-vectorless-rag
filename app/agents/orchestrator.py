@@ -5,6 +5,8 @@ from app.agents.models import AgentDecisionType, AgentResponse
 from app.agents.planner import AgentPlanner
 from app.agents.refiner import AgentQueryRefiner, QueryRefiner
 from app.agents.state import AgentState
+from app.citations.models import Citation
+from app.citations.service import build_citations
 from app.retrieval.models import RetrievedContext
 
 
@@ -77,6 +79,7 @@ class AgentOrchestrator:
                         state.current_query,
                         latest_context,
                     ),
+                    citations=build_citations(latest_context),
                 )
 
             if decision.decision_type is AgentDecisionType.STOP:
@@ -137,11 +140,13 @@ class AgentOrchestrator:
         state: AgentState,
         *,
         answer: str,
+        citations: tuple[Citation, ...] = (),
     ) -> AgentResponse:
         return AgentResponse(
             query=state.original_query,
             answer=answer,
             iterations=state.iteration,
+            citations=citations,
         )
 
     @staticmethod

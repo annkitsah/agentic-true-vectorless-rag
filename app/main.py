@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -9,6 +10,11 @@ from app.config.settings import get_settings
 from app.container import ApplicationContainer, create_application_container
 
 settings = get_settings()
+
+logging.basicConfig(
+    level=settings.log_level,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 container: ApplicationContainer = create_application_container(settings)
 

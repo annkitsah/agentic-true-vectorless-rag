@@ -42,6 +42,23 @@ class QueryRequest(BaseModel):
     )
 
 
+class CitationResponse(BaseModel):
+    """API representation of a source page an answer was grounded in."""
+
+    model_config = ConfigDict(frozen=True)
+
+    document_id: str
+    filename: str | None = Field(
+        default=None,
+        description=(
+            "The source document's filename, when it could still be "
+            "resolved at response time."
+        ),
+    )
+    page_number: int = Field(ge=1)
+    score: float = Field(ge=0)
+
+
 class QueryResponse(BaseModel):
     """API representation of an agent answer."""
 
@@ -50,3 +67,4 @@ class QueryResponse(BaseModel):
     query: str
     answer: str
     iterations: int = Field(ge=0)
+    citations: tuple[CitationResponse, ...] = ()

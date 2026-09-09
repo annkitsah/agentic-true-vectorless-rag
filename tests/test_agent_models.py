@@ -9,6 +9,7 @@ from app.agents.models import (
     AgentPlan,
     AgentResponse,
 )
+from app.citations.models import Citation
 
 
 def test_agent_action_defaults_and_values() -> None:
@@ -108,3 +109,30 @@ def test_agent_response_rejects_negative_iterations() -> None:
             answer="answer",
             iterations=-1,
         )
+
+
+def test_agent_response_citations_default_to_empty() -> None:
+    response = AgentResponse(
+        query="test",
+        answer="answer",
+        iterations=1,
+    )
+
+    assert response.citations == ()
+
+
+def test_agent_response_accepts_citations() -> None:
+    citation = Citation(
+        document_id="doc-1",
+        page_number=4,
+        score=3.09,
+    )
+
+    response = AgentResponse(
+        query="test",
+        answer="answer",
+        iterations=1,
+        citations=(citation,),
+    )
+
+    assert response.citations == (citation,)

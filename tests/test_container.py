@@ -250,3 +250,22 @@ def test_generation_provider_uses_configured_model(
         container.generation_provider.model_name
         == settings.ollama_model
     )
+
+
+def test_decision_engine_and_refiner_use_configured_model(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+
+    container = create_application_container(settings)
+
+    assert container.decision_engine.model == settings.ollama_model
+    assert container.refiner.model == settings.ollama_model
+    assert (
+        container.decision_engine.generation_service
+        is container.generation_service
+    )
+    assert (
+        container.refiner.generation_service
+        is container.generation_service
+    )

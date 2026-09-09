@@ -3,7 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_container
-from app.api.schemas import QueryRequest, QueryResponse
+from app.api.schemas import CitationResponse, QueryRequest, QueryResponse
+from app.citations.models import Citation
 from app.container import ApplicationContainer
 
 logger = logging.getLogger(__name__)
@@ -52,4 +53,41 @@ async def run_query(
         query=response.query,
         answer=response.answer,
         iterations=response.iterations,
+        citations=_build_citation_responses(
+            response.citations,
+            container,
+        ),
+    )
+
+
+def _build_citation_responses(
+    citations: tuple[Citation, ...],
+    container: ApplicationContainer,
+) -> tuple[CitationResponse, ...]:
+    """Enrich citations with source filenames, caching lookups.
+
+    Citations often repeat the same document across several pages, so
+    each unique document is looked up at most once per request rather
+    than once per citation.
+    """
+
+    filename_cache: dict[str, str | None] = {}
+
+    def resolve_filename(document_id: str) -> str | None:
+        if document_id not in filename_cache:
+            document = container.repository.get_by_id(document_id)
+            filename_cache[document_id] = (
+                document.filename if document is not None else None
+            )
+
+        return filename_cache[document_id]
+
+    return tuple(
+        CitationResponse(
+            document_id=citation.document_id,
+            filename=resolve_filename(citation.document_id),
+            page_number=citation.page_number,
+            score=citation.score,
+        )
+        for citation in citations
     )

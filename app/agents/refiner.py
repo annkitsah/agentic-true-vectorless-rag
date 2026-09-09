@@ -1,8 +1,11 @@
+import logging
 from abc import ABC, abstractmethod
 
 from app.agents.state import AgentState
 from app.generation.models import GenerationMessage, GenerationRequest
 from app.generation.service import GenerationService
+
+logger = logging.getLogger(__name__)
 
 
 class QueryRefiner(ABC):
@@ -143,10 +146,26 @@ class LLMQueryRefiner(QueryRefiner):
         try:
             rewritten = self._rewrite(state, current_query)
         except Exception:
+            logger.exception(
+                "LLM query rewrite failed for query %r; "
+                "falling back to heuristic refiner.",
+                current_query,
+            )
             return self._fallback.refine(state)
 
         if rewritten is None:
+            logger.warning(
+                "LLM rewrite of query %r was empty or unchanged; "
+                "falling back to heuristic refiner.",
+                current_query,
+            )
             return self._fallback.refine(state)
+
+        logger.info(
+            "LLM rewrote query %r -> %r",
+            current_query,
+            rewritten,
+        )
 
         return rewritten
 

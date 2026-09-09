@@ -1,10 +1,13 @@
 import json
+import logging
 from abc import ABC, abstractmethod
 
 from app.agents.models import AgentDecision, AgentDecisionType
 from app.agents.state import AgentState
 from app.generation.models import GenerationMessage, GenerationRequest
 from app.generation.service import GenerationService
+
+logger = logging.getLogger(__name__)
 
 
 class DecisionEngine(ABC):
@@ -196,10 +199,29 @@ class LLMDecisionEngine(DecisionEngine):
         try:
             judged_decision = self._judge(state)
         except Exception:
+            logger.exception(
+                "LLM decision judgment failed for query %r; "
+                "falling back to heuristic (%s).",
+                state.current_query,
+                fallback_decision.decision_type,
+            )
             return fallback_decision
 
         if judged_decision is None:
+            logger.warning(
+                "LLM decision response was unparseable for query %r; "
+                "falling back to heuristic (%s).",
+                state.current_query,
+                fallback_decision.decision_type,
+            )
             return fallback_decision
+
+        logger.info(
+            "LLM judged query %r as %s (reason: %s)",
+            state.current_query,
+            judged_decision.decision_type,
+            judged_decision.reason,
+        )
 
         return judged_decision
 

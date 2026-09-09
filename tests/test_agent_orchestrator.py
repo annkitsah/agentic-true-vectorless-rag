@@ -320,6 +320,7 @@ def test_stop_response_prefers_decision_reason_over_raw_context() -> None:
     assert response.answer == "Maximum agent iterations reached."
     assert executor.calls == 1
 
+
 def test_orchestrator_stores_decision_in_state() -> None:
     captured_states: list[AgentState] = []
 
@@ -474,3 +475,31 @@ def test_orchestrator_keeps_document_id_across_refine_iterations() -> None:
     )
 
     assert executor.seen_document_ids == ["doc-123", "doc-123"]
+
+
+def test_answer_response_includes_citations_from_used_context() -> None:
+    executor = StubExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+    )
+
+    response = orchestrator.run("test query")
+
+    assert len(response.citations) == 1
+    assert response.citations[0].document_id == "doc-1"
+    assert response.citations[0].page_number == 1
+
+
+def test_stop_response_has_no_citations() -> None:
+    executor = StubExecutor()
+
+    orchestrator = AgentOrchestrator(
+        executor=executor,
+        decision_engine=AgentDecisionEngine(max_iterations=1),
+    )
+
+    response = orchestrator.run("test query")
+
+    assert response.answer == "Maximum agent iterations reached."
+    assert response.citations == ()
