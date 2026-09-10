@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -12,6 +13,11 @@ def main() -> None:
     args = _parse_args()
 
     settings = get_settings()
+
+    logging.basicConfig(
+        level=settings.log_level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
 
     print("=== Evaluation Harness ===")
 
@@ -71,7 +77,23 @@ def main() -> None:
         "generation provider, e.g. Ollama) ---"
     )
 
-    agent_summary = evaluation_service.evaluate_agent(cases)
+    try:
+        agent_summary = evaluation_service.evaluate_agent(cases)
+    except Exception as exc:
+        print(
+            f"\nERROR: Full agent evaluation could not complete: {exc}"
+        )
+        print(
+            "This usually means the configured generation provider "
+            "is unreachable -- for the default Ollama setup, run "
+            "'ollama serve' and confirm 'curl "
+            "http://localhost:11434/api/tags' responds, then retry."
+        )
+        print(
+            "\nRetrieval evaluation above is unaffected and still "
+            "reflects real results."
+        )
+        sys.exit(2)
 
     for result in agent_summary.results:
         status = "PASS" if result.page_hit else "FAIL"

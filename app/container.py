@@ -70,6 +70,7 @@ class ApplicationContainer:
 
         self.retrieval_context_assembler = RetrievalContextAssembler(
             max_pages=settings.retrieval_max_pages,
+            max_chars=settings.retrieval_max_chars,
         )
 
         self.retrieval_service = RetrievalService(

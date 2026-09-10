@@ -69,6 +69,12 @@ class Settings(BaseSettings):
         le=500,
     )
 
+    retrieval_max_chars: int = Field(
+        default=100_000,
+        ge=1_000,
+        le=1_000_000,
+    )
+
     ocr_enabled: bool = True
 
 

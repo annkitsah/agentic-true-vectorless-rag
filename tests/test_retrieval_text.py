@@ -100,3 +100,33 @@ def test_invalid_minimum_token_length() -> None:
             "test",
             min_token_length=0,
         )
+
+
+def test_tokenize_removes_question_words() -> None:
+    # Interrogative/auxiliary words are grammatically necessary in a
+    # natural-language question but carry no topical signal for BM25
+    # ranking -- leaving them un-stripped let common question phrasing
+    # (e.g. "what ... does ...") skew scores toward pages that simply
+    # contain ordinary prose, rather than pages actually relevant to
+    # the query's real content words.
+    result = tokenize(
+        "What models does Perplexity use, and how do they work?"
+    )
+
+    assert result == (
+        "models",
+        "perplexity",
+        "use",
+        "they",
+        "work",
+    )
+    assert "what" not in result
+    assert "does" not in result
+    assert "how" not in result
+    assert "do" not in result
+
+
+def test_tokenize_removes_remaining_wh_words() -> None:
+    result = tokenize("Who, which, why, when, where, and whom")
+
+    assert result == ()

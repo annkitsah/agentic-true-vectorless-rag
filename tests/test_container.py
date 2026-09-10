@@ -160,17 +160,18 @@ def test_container_wires_retrieval_top_k_and_max_pages_from_settings(
         metadata_dir=str(tmp_path / "data" / "metadata"),
         retrieval_top_k=3,
         retrieval_max_pages=7,
+        retrieval_max_chars=50_000,
     )
 
     container = create_application_container(settings)
 
     assert container.executor.top_k == 3
     assert container.retrieval_context_assembler.max_pages == 7
+    assert container.retrieval_context_assembler.max_chars == 50_000
     assert (
         container.retrieval_service.context_assembler
         is container.retrieval_context_assembler
     )
-
 
 def test_executor_uses_container_retrieval_service(
     tmp_path: Path,
