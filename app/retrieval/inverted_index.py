@@ -91,3 +91,58 @@ class InvertedIndex:
 
         self._index.clear()
         self._page_terms.clear()
+
+    def to_snapshot(self) -> dict[str, dict[str, list[str]]]:
+        """Serialize the index into a JSON-safe snapshot.
+
+        Contains only term-to-page-ID mappings, not raw page text --
+        loading a snapshot skips re-tokenizing every page entirely,
+        which is what makes it fast at scale.
+        """
+
+        return {
+            "index": {
+                term: sorted(page_ids)
+                for term, page_ids in self._index.items()
+            },
+            "page_terms": {
+                page_id: sorted(terms)
+                for page_id, terms in self._page_terms.items()
+            },
+        }
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        snapshot: dict[str, dict[str, list[str]]],
+    ) -> "InvertedIndex":
+        """Rebuild an index from a snapshot produced by `to_snapshot`."""
+
+        if not isinstance(snapshot, dict):
+            raise TypeError("snapshot must be a dict")
+
+        index_data = snapshot.get("index")
+        page_terms_data = snapshot.get("page_terms")
+
+        if not isinstance(index_data, dict) or not isinstance(
+            page_terms_data, dict
+        ):
+            raise ValueError(
+                "snapshot must contain 'index' and 'page_terms' dicts"
+            )
+
+        instance = cls()
+
+        instance._index = defaultdict(
+            set,
+            {
+                term: set(page_ids)
+                for term, page_ids in index_data.items()
+            },
+        )
+        instance._page_terms = {
+            page_id: set(terms)
+            for page_id, terms in page_terms_data.items()
+        }
+
+        return instance

@@ -161,6 +161,7 @@ def test_ingest_non_pdf(
     with pytest.raises(ValueError):
         service.ingest(text_file)
 
+
 def test_ingest_indexes_pages_when_index_lifecycle_is_configured(
     repository: DocumentRepository,
     page_store: PageStore,
@@ -192,3 +193,83 @@ def test_ingest_indexes_pages_when_index_lifecycle_is_configured(
 
     assert len(indexed_terms) > 0
     assert page_index.contains(indexed_terms[0])
+
+
+def test_ingest_saves_index_snapshot_when_configured(
+    repository: DocumentRepository,
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_path = tmp_path / "snapshot.json"
+    snapshot_store = IndexSnapshotStore(snapshot_path)
+
+    page_index = PageIndex(page_store=page_store)
+    index_lifecycle = IndexLifecycle(
+        page_store=page_store,
+        page_index=page_index,
+        snapshot_store=snapshot_store,
+    )
+
+    service = IngestionService(
+        repository=repository,
+        page_store=page_store,
+        index_lifecycle=index_lifecycle,
+    )
+
+    assert not snapshot_path.is_file()
+
+    pdf_path = Path(
+        "data/raw/Chapter 1 - The Overview of Map of GenAI.pdf"
+    )
+
+    result = service.ingest(pdf_path)
+
+    assert snapshot_path.is_file()
+
+    loaded = snapshot_store.load()
+
+    assert loaded is not None
+    _, page_count = loaded
+    assert page_count == result.page_count
+
+
+def test_duplicate_ingestion_does_not_reindex(
+    repository: DocumentRepository,
+    page_store: PageStore,
+) -> None:
+    page_index = PageIndex(page_store=page_store)
+    index_lifecycle = IndexLifecycle(
+        page_store=page_store,
+        page_index=page_index,
+    )
+
+    service = IngestionService(
+        repository=repository,
+        page_store=page_store,
+        index_lifecycle=index_lifecycle,
+    )
+
+    pdf_path = Path(
+        "data/raw/Chapter 1 - The Overview of Map of GenAI.pdf"
+    )
+
+    first_result = service.ingest(pdf_path)
+    second_result = service.ingest(pdf_path)
+
+    assert second_result.duplicate is True
+
+    page_id = f"{first_result.document.document_id}:page:1"
+
+    first_page_text = page_store.get_page(
+        first_result.document.document_id, 1
+    ).text
+    indexed_terms = tokenize(first_page_text)
+
+    # Re-ingesting a duplicate should not raise or corrupt the index;
+    # the page should still be present exactly once.
+    assert len(indexed_terms) > 0
+    assert page_id in page_index.inverted_index.lookup(
+        indexed_terms[0]
+    )

@@ -230,3 +230,65 @@ def test_get_all_pages_returns_pages_across_documents(
         ("doc_a", 2),
         ("doc_b", 2),
     ]
+
+
+def test_count_pages_for_document(tmp_path: Path) -> None:
+    store = PageStore(tmp_path)
+
+    store.save_pages(
+        [
+            create_page("doc-a", 1),
+            create_page("doc-a", 2),
+            create_page("doc-a", 3),
+        ]
+    )
+
+    assert store.count_pages("doc-a") == 3
+
+
+def test_count_pages_for_missing_document_is_zero(
+    tmp_path: Path,
+) -> None:
+    store = PageStore(tmp_path)
+
+    assert store.count_pages("does-not-exist") == 0
+
+
+def test_count_all_pages_across_documents(tmp_path: Path) -> None:
+    store = PageStore(tmp_path)
+
+    store.save_pages(
+        [
+            create_page("doc-a", 1),
+            create_page("doc-a", 2),
+        ]
+    )
+    store.save_pages([create_page("doc-b", 1)])
+
+    assert store.count_all_pages() == 3
+
+
+def test_count_all_pages_on_empty_store(tmp_path: Path) -> None:
+    store = PageStore(tmp_path)
+
+    assert store.count_all_pages() == 0
+
+
+def test_count_pages_matches_get_pages_length(
+    tmp_path: Path,
+) -> None:
+    store = PageStore(tmp_path)
+
+    store.save_pages(
+        [
+            create_page("doc-a", 1),
+            create_page("doc-a", 2),
+            create_page("doc-a", 3),
+            create_page("doc-a", 4),
+        ]
+    )
+
+    assert store.count_pages("doc-a") == len(
+        store.get_pages("doc-a")
+    )
+    

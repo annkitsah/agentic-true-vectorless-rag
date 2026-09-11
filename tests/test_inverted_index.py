@@ -145,3 +145,67 @@ def test_invalid_page_id_is_rejected(page_id: str) -> None:
 
     with pytest.raises(ValueError):
         index.add(page_id, "retrieval")
+
+
+def test_to_snapshot_and_from_snapshot_round_trip() -> None:
+    index = InvertedIndex()
+    index.add("doc-001:page:1", "retrieval systems architecture")
+    index.add("doc-001:page:2", "vectorless retrieval design")
+
+    snapshot = index.to_snapshot()
+
+    restored = InvertedIndex.from_snapshot(snapshot)
+
+    assert restored.lookup("retrieval") == (
+        "doc-001:page:1",
+        "doc-001:page:2",
+    )
+    assert restored.lookup("systems") == ("doc-001:page:1",)
+    assert restored.lookup("vectorless") == ("doc-001:page:2",)
+
+
+def test_from_snapshot_preserves_remove_behavior() -> None:
+    index = InvertedIndex()
+    index.add("doc-001:page:1", "retrieval systems")
+    index.add("doc-001:page:2", "retrieval design")
+
+    restored = InvertedIndex.from_snapshot(index.to_snapshot())
+
+    restored.remove("doc-001:page:1")
+
+    assert restored.lookup("systems") == ()
+    assert restored.lookup("retrieval") == ("doc-001:page:2",)
+
+
+def test_to_snapshot_on_empty_index() -> None:
+    index = InvertedIndex()
+
+    snapshot = index.to_snapshot()
+
+    assert snapshot == {"index": {}, "page_terms": {}}
+
+    restored = InvertedIndex.from_snapshot(snapshot)
+
+    assert restored.lookup("anything") == ()
+
+
+def test_from_snapshot_rejects_non_dict() -> None:
+    with pytest.raises(TypeError):
+        InvertedIndex.from_snapshot("not a dict")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "snapshot",
+    [
+        {},
+        {"index": {}},
+        {"page_terms": {}},
+        {"index": "not a dict", "page_terms": {}},
+        {"index": {}, "page_terms": "not a dict"},
+    ],
+)
+def test_from_snapshot_rejects_malformed_shape(
+    snapshot: dict,
+) -> None:
+    with pytest.raises(ValueError):
+        InvertedIndex.from_snapshot(snapshot)

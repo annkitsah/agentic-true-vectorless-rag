@@ -250,3 +250,34 @@ class PageStore:
             pages.extend(self.get_pages(document_id))
 
         return pages
+
+    def count_pages(
+        self,
+        document_id: str,
+    ) -> int:
+        """Count a document's persisted pages without reading them.
+
+        Uses a directory listing rather than `get_pages`, which parses
+        every page's JSON content -- this stays cheap even for a
+        document with many pages, since it never touches file content.
+        """
+
+        pages_dir = self._pages_dir(document_id)
+
+        if not pages_dir.is_dir():
+            return 0
+
+        return sum(1 for _ in pages_dir.glob("*.json"))
+
+    def count_all_pages(self) -> int:
+        """Count all persisted pages across all documents, cheaply.
+
+        Like `count_pages`, this only lists directory contents and
+        never parses page file content, so it stays fast regardless of
+        total corpus size.
+        """
+
+        return sum(
+            self.count_pages(document_id)
+            for document_id in self.get_document_ids()
+        )

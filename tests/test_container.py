@@ -17,6 +17,7 @@ from app.ingestion.service import IngestionService
 from app.retrieval.candidates import CandidateRetriever
 from app.retrieval.context import RetrievalContextAssembler
 from app.retrieval.index_lifecycle import IndexLifecycle
+from app.retrieval.index_persistence import IndexSnapshotStore
 from app.retrieval.inverted_index import InvertedIndex
 from app.retrieval.lexical import LexicalRetriever
 from app.retrieval.page_index import PageIndex

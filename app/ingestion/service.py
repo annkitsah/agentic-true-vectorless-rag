@@ -117,6 +117,7 @@ class IngestionService:
         if self.index_lifecycle is not None:
             for page in pages:
                 self.index_lifecycle.index_page(page)
+            self.index_lifecycle.save()
 
         document = DocumentRecord(
             document_id=document_id,

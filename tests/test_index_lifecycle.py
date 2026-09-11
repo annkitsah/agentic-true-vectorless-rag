@@ -330,3 +330,171 @@ def test_rebuild_can_recover_from_stale_index(
     lifecycle.rebuild()
 
     assert lifecycle.page_index.lookup("stale") == ()
+
+
+def test_build_without_snapshot_store_always_rebuilds(
+    page_store: PageStore,
+) -> None:
+    lifecycle = IndexLifecycle(page_store)
+
+    indexed_count = lifecycle.build()
+
+    assert indexed_count == 3
+    assert lifecycle.page_index.lookup("python") == (
+        "doc-001:page:1",
+    )
+
+
+def test_save_is_a_no_op_without_snapshot_store(
+    page_store: PageStore,
+) -> None:
+    lifecycle = IndexLifecycle(page_store)
+
+    lifecycle.build()
+
+    # Should not raise, even with nothing configured to save to.
+    lifecycle.save()
+
+
+def test_build_uses_snapshot_when_page_count_matches(
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_store = IndexSnapshotStore(
+        tmp_path / "snapshot.json"
+    )
+
+    first_lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    first_lifecycle.build()
+
+    # A fresh lifecycle, with a fresh in-memory index, should be able
+    # to load state entirely from the snapshot -- no page content
+    # needs to be re-read or re-tokenized.
+    second_lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    indexed_count = second_lifecycle.build()
+
+    assert indexed_count == 3
+    assert second_lifecycle.page_index.lookup("python") == (
+        "doc-001:page:1",
+    )
+    assert second_lifecycle.page_index.lookup("retrieval") == (
+        "doc-001:page:2",
+    )
+
+
+def test_build_falls_back_to_rebuild_when_page_count_mismatches(
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_store = IndexSnapshotStore(
+        tmp_path / "snapshot.json"
+    )
+
+    first_lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    first_lifecycle.build()
+
+    # A page gets added to the store after the snapshot was taken,
+    # without updating the snapshot -- simulating a stale snapshot.
+    page_store.save_pages(
+        [
+            create_page(
+                "doc-003",
+                1,
+                "A brand new document.",
+            )
+        ]
+    )
+
+    second_lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    indexed_count = second_lifecycle.build()
+
+    assert indexed_count == 4
+    assert second_lifecycle.page_index.lookup("brand") == (
+        "doc-003:page:1",
+    )
+
+
+def test_build_falls_back_to_rebuild_when_no_snapshot_exists(
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_store = IndexSnapshotStore(
+        tmp_path / "does-not-exist.json"
+    )
+
+    lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    indexed_count = lifecycle.build()
+
+    assert indexed_count == 3
+
+
+def test_rebuild_refreshes_the_snapshot(
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_path = tmp_path / "snapshot.json"
+    snapshot_store = IndexSnapshotStore(snapshot_path)
+
+    lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+    lifecycle.rebuild()
+
+    assert snapshot_path.is_file()
+
+
+def test_save_persists_current_index_state(
+    page_store: PageStore,
+    tmp_path: Path,
+) -> None:
+    from app.retrieval.index_persistence import IndexSnapshotStore
+
+    snapshot_path = tmp_path / "snapshot.json"
+    snapshot_store = IndexSnapshotStore(snapshot_path)
+
+    lifecycle = IndexLifecycle(
+        page_store,
+        snapshot_store=snapshot_store,
+    )
+
+    assert not snapshot_path.is_file()
+
+    lifecycle.index_page(
+        create_page("doc-999", 1, "manually indexed content")
+    )
+    lifecycle.save()
+
+    assert snapshot_path.is_file()
+
+    loaded = snapshot_store.load()
+
+    assert loaded is not None
+    _, page_count = loaded
+    # save() counts against the page store, not the in-memory index --
+    # doc-999 was indexed in memory but never persisted via PageStore,
+    # so it correctly does not inflate the saved page_count.
+    assert page_count == page_store.count_all_pages()

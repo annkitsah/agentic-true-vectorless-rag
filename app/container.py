@@ -17,6 +17,7 @@ from app.ocr.providers.mistral import MistralOCRProvider
 from app.retrieval.candidates import CandidateRetriever
 from app.retrieval.context import RetrievalContextAssembler
 from app.retrieval.index_lifecycle import IndexLifecycle
+from app.retrieval.index_persistence import IndexSnapshotStore
 from app.retrieval.inverted_index import InvertedIndex
 from app.retrieval.lexical import LexicalRetriever
 from app.retrieval.page_index import PageIndex
@@ -46,9 +47,14 @@ class ApplicationContainer:
             inverted_index=self.inverted_index,
         )
 
+        self.index_snapshot_store = IndexSnapshotStore(
+            Path(settings.index_dir) / "inverted_index_snapshot.json",
+        )
+
         self.index_lifecycle = IndexLifecycle(
             page_store=self.page_store,
             page_index=self.page_index,
+            snapshot_store=self.index_snapshot_store,
         )
 
         self.ingestion_service = IngestionService(
@@ -130,6 +136,10 @@ class ApplicationContainer:
             exist_ok=True,
         )
         Path(self.settings.metadata_dir).mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        Path(self.settings.index_dir).mkdir(
             parents=True,
             exist_ok=True,
         )
